@@ -3,6 +3,7 @@ const router = require("express").Router();
 const {
   customerRegister,
   customerLogIn,
+  googleAuthHandler,
 } = require("../controllers/customerController");
 const {
   getProducts,
@@ -19,6 +20,7 @@ const API_VERSION = process.env.API_VERSION;
 // Customer
 router.post(API_VERSION + "/CustomerRegister", customerRegister);
 router.post(API_VERSION + "/CustomerLogin", customerLogIn);
+router.post("/auth/google/callback", googleAuthHandler);
 // router.get(API_VERSION + "/getCartDetail/:id", getCartDetail);
 // router.put(API_VERSION + "/CustomerUpdate/:id", cartUpdate);
 
@@ -30,7 +32,7 @@ router.post(API_VERSION + "/SellerLogin", sellerLogIn);
 router.post(API_VERSION + "/ProductCreate", productCreate);
 router.get(API_VERSION + "/getSellerProducts/:id", getSellerProducts);
 router.get(API_VERSION + "/getProducts", getProducts);
-router.get(API_VERSION + "/getProductDetail/:id", getProductDetail);
+// router.get(API_VERSION + "/getProductDetail/:id", getProductDetail);
 // router.get('/getInterestedCustomers/:id', getInterestedCustomers);
 // router.get('/getAddedToCartProducts/:id', getAddedToCartProducts);
 

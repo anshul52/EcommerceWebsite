@@ -1,7 +1,14 @@
 const Customer = require("../models/customerSchema.js");
 const { generateToken } = require("../config/jwtToken.js");
 const bcrypt = require("bcrypt");
+const axios = require("axios");
+const { OAuth2Client } = require("google-auth-library");
 
+// Google OAuth2 credentials
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+const REDIRECT_URI = "http://localhost:5000/auth/google/callback";
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const customerRegister = async (req, res) => {
   try {
     console.log("req.body::", req.body);
@@ -64,9 +71,78 @@ const customerLogIn = async (req, res) => {
     res.send({ message: "Email and password are required" });
   }
 };
+
+// google auth sign in / sign up
+const googleAuthHandler = async (req, res) => {
+  const { credential } = req.body;
+
+  if (!credential) {
+    return res.status(400).json({
+      success: false,
+      message: "No credential (ID token) found",
+    });
+  }
+
+  try {
+    // Verify the Google ID token
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    console.log("payload::", payload);
+
+    // Check if the user already exists in the database
+    let user = await Customer.findOne({ email: payload.email });
+    if (!user) {
+      // If user doesn't exist, create a new customer
+      user = new Customer({
+        name: payload.name,
+        email: payload.email,
+      });
+      await user.save();
+      console.log("New user created:", user);
+    } else {
+      console.log("Existing user found:", user);
+    }
+
+    // Generate a JWT token
+    const token = generateToken(user._id);
+    const resultss = {
+      ...user._doc,
+      token,
+    };
+    // Send success response with JWT and user details
+    return res.status(200).json({
+      success: true,
+      message: "Authentication successful",
+      resultss,
+    });
+  } catch (error) {
+    console.error("Error during token exchange:", error);
+
+    // Handle Google verification errors
+    if (error.name === "JsonWebTokenError") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid ID token",
+      });
+    }
+
+    // Handle all other errors
+    return res.status(500).json({
+      success: false,
+      message: "Authentication failed",
+      error: error.message || "Internal server error",
+    });
+  }
+};
+
 module.exports = {
   customerRegister,
   customerLogIn,
+  googleAuthHandler,
   //   getCartDetail,
   //   cartUpdate,
 };
