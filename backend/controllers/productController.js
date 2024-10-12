@@ -60,7 +60,7 @@ module.exports = {
   getProducts,
   productCreate,
   getSellerProducts,
-  getProductDetail,
+  // getProductDetail,
   // updateProduct,
   // addReview,
   // searchProduct,
